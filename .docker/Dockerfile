@@ -26,7 +26,11 @@ RUN apt-get update && apt-get install -y \
     python3-setuptools \
     python3-vcstool \
     wget \
-    ros-$ROSDISTRO-rqt-common-plugins 
+    udev \
+    ros-$ROSDISTRO-rqt-common-plugins \
+    ros-$ROSDISTRO-image-pipeline \
+    ros-$ROSDISTRO-image-common \
+    libusb-1.0-0-dev
 
 RUN pip3 install -U \
     argcomplete \
@@ -46,21 +50,36 @@ RUN pip3 install -U \
 # reduce size by removing apt cache
 RUN ["/bin/bash", "-c", "rm -rf /var/lib/apt/lists/*"]
 
-
 # copy packages across
 RUN mkdir -p /dev_ws/src/ros_pco_edge
 COPY . /dev_ws/src/ros_pco_edge/
 
-# micro_resector_moveit_teleop_stack stack build 
+# pco_linux build
+RUN mkdir -p /tmp/pco_linux
+WORKDIR /tmp/pco_linux
+RUN ["/bin/bash", "-c", "wget https://www.pco.de/fileadmin/fileadmin/user_upload/pco-software/pco.linux_usb_pl_1_01_19.tar.gz && \
+                         tar -xzf pco.linux_usb_pl_1_01_19.tar.gz"]
+
+WORKDIR /tmp/pco_linux/pco_camera/pco_usb_pl
+# RUN ["/bin/bash", "-c", "make && \
+#                          ./symlink_pco -u && \
+#                          /sbin/ldconfig && \
+#                          cp pco_usb.rules /etc/udev/rules.d/ \
+#                          "]
+#
+
+RUN ["/bin/bash", "-c", "cp pco_usb.rules /etc/udev/rules.d/ \
+                         "]
+
+# WORKDIR /tmp/pco_linux/pco_camera/
+# RUN ["/bin/bash", "-c", "cp -r pco_common /usr/include/ "]
+
+# pco_edge build 
 WORKDIR /dev_ws
 RUN ["/bin/bash", "-c", "source /opt/ros/$ROSDISTRO/setup.bash &&\
-    # vcs import src < ./src/micro_resector_moveit_teleop_stack/dependencies.rosinstall &&\
-    # vcs pull src || true &&\
     colcon build --symlink-install \
     "]
 
-# RUN ["/bin/bash", "-c", "cp /dev_ws/src/micro_resector_moveit_teleop_stack/.docker/entrypoint.sh / && chmod 777 /entrypoint.sh"]
-# ENTRYPOINT [ "/entrypoint.sh" ]
 CMD ["bash"]
 
 
