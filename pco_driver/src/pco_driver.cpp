@@ -46,6 +46,13 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
+    pco_error_ = pco_camera_->PCO_ResetSettingsToDefault();
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to reset the settings to default ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
+
     RCLCPP_INFO_STREAM(LOGGER, "Determining image configuration");
     pco_error_ = pco_grabber_->Get_actual_size(&image_width_, &image_height_, &bit_per_pixel_);
     if(pco_error_!=PCO_NOERROR)
