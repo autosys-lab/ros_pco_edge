@@ -117,7 +117,8 @@ install(TARGETS
 
 install(TARGETS
         pco_camera_driver_node
-        DESTINATION lib/${PROJECT_NAME}
+        camera_grab
+	DESTINATION lib/${PROJECT_NAME}
         )
 
 # Install launch files.
