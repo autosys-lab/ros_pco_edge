@@ -8,8 +8,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <image_transport/image_transport.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
-
-#include <opencv4/opencv2/imgproc.hpp>
+#include <sensor_msgs/image_encodings.hpp>
 
 // PCO camera
 #include <pco_common/pco_classes/Cpco_com.h>
@@ -23,18 +22,12 @@ public:
     ~PCODriver();
     bool initialiseCamera();
 
-    bool startCamera();
-
 private:
     rclcpp::TimerBase::SharedPtr timer_;
 
-    std::string frame_id_;
-    uint image_height_;
-    uint image_width_;
+    uint image_height_, image_width_, bit_per_pixel_;
     double fps_;
     int camera_id;
-
-    std::chrono::steady_clock::time_point last_frame_;
 
     std::shared_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
     image_transport::CameraPublisher camera_info_pub_;
@@ -45,7 +38,7 @@ private:
 
     // PCO camera components
     std::shared_ptr<CPco_com> pco_camera_;
-    std::shared_ptr<CPco_grab_usb> pco_grabber;
+    std::shared_ptr<CPco_grab_usb> pco_grabber_;
     CPco_Log* mylog=NULL;
     DWORD pco_error_;
 
