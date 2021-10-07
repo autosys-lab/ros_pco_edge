@@ -54,13 +54,13 @@ RUN ["/bin/bash", "-c", "rm -rf /var/lib/apt/lists/*"]
 RUN mkdir -p /dev_ws/src/ros_pco_edge
 COPY . /dev_ws/src/ros_pco_edge/
 
-# pco_linux build
-RUN mkdir -p /tmp/pco_linux
-WORKDIR /tmp/pco_linux
-RUN ["/bin/bash", "-c", "wget https://www.pco.de/fileadmin/fileadmin/user_upload/pco-software/pco.linux_usb_pl_1_01_19.tar.gz && \
-                         tar -xzf pco.linux_usb_pl_1_01_19.tar.gz"]
-
-WORKDIR /tmp/pco_linux/pco_camera/pco_usb_pl
+# # pco_linux build
+# RUN mkdir -p /tmp/pco_linux
+# WORKDIR /tmp/pco_linux
+# RUN ["/bin/bash", "-c", "wget https://www.pco.de/fileadmin/fileadmin/user_upload/pco-software/pco.linux_usb_pl_1_01_19.tar.gz && \
+#                          tar -xzf pco.linux_usb_pl_1_01_19.tar.gz"]
+#
+# WORKDIR /tmp/pco_linux/pco_camera/pco_usb_pl
 # RUN ["/bin/bash", "-c", "make && \
 #                          ./symlink_pco -u && \
 #                          /sbin/ldconfig && \
@@ -68,8 +68,8 @@ WORKDIR /tmp/pco_linux/pco_camera/pco_usb_pl
 #                          "]
 #
 
-RUN ["/bin/bash", "-c", "cp pco_usb.rules /etc/udev/rules.d/ \
-                         "]
+WORKDIR /dev_ws/src/ros_pco_edge
+RUN ["/bin/bash", "-c", "cp ./.docker/pco_usb.rules /etc/udev/rules.d/ "]
 
 # WORKDIR /tmp/pco_linux/pco_camera/
 # RUN ["/bin/bash", "-c", "cp -r pco_common /usr/include/ "]
