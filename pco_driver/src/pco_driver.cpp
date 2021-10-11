@@ -46,10 +46,45 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
+    pco_error_ = pco_grabber_->Set_Grabber_Timeout(10000);
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set grabber timeout with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
+
+    pco_error_ = pco_camera_->PCO_SetCameraToCurrentTime();
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera to current time with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
+
     pco_error_ = pco_camera_->PCO_ResetSettingsToDefault();
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to reset the settings to default ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
+
+    pco_error_ = pco_camera_->PCO_SetTimestampMode(2);
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timestamp mode of the camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
+
+    pco_error_ = pco_camera_->PCO_SetTimebase(1, 1);
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timebase of the camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
+
+    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 5000);
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
         return false;
     }
 
