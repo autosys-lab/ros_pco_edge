@@ -59,6 +59,13 @@ bool PCODriver::initialiseCamera() {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera to current time with ERROR: \n" << pco_error_ << "\n\nExiting\n");
         return false;
     }
+    
+    pco_error_ = pco_camera_->PCO_SetRecordingState(0);
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera state to stop with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        return false;
+    }
 
     pco_error_ = pco_camera_->PCO_ResetSettingsToDefault();
     if(pco_error_!=PCO_NOERROR)
@@ -89,7 +96,7 @@ bool PCODriver::initialiseCamera() {
     }
 
     RCLCPP_INFO_STREAM(LOGGER, "Determining image configuration");
-    pco_error_ = pco_grabber_->Get_actual_size(&image_width_, &image_height_, &bit_per_pixel_);
+    pco_error_ = pco_camera_->PCO_GetActualSize(&image_width_, &image_height_);
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to determine image size with ERROR: \n" << pco_error_ << "\n\nExiting\n");
@@ -99,15 +106,15 @@ bool PCODriver::initialiseCamera() {
     WORD bit_alignment;
     pco_error_ = pco_camera_->PCO_GetBitAlignment(&bit_alignment); // 0 is MSB (big endian), 1 is LSB (little endian)
 
-    RCLCPP_INFO_STREAM(LOGGER, "Image width: " << image_width_ << "\nImage height: " << image_height_
-                        << "Bits per pixel: " << bit_per_pixel_);
+    RCLCPP_INFO_STREAM(LOGGER, "Image width: " << image_width_ << " Image height: " << image_height_);
 
     // Setup the buffer for the images
     pco_buffer_.assign(image_height_ * image_width_, 0);
+    image_msg_ = std::make_shared<sensor_msgs::msg::Image>();
     image_msg_->data.assign(image_height_ * image_width_, 0);
     image_msg_->width = image_width_;
     image_msg_->height = image_height_;
-    image_msg_->step = (bit_per_pixel_ / 8) * image_width_;   //row length in bytes
+    image_msg_->step = (16 / 8) * image_width_;   //row length in bytes
     image_msg_->is_bigendian = bit_alignment == 0;
     image_msg_->encoding = sensor_msgs::image_encodings::MONO16;
     image_msg_->header.frame_id = this->get_parameter("frame_id").as_string();
@@ -133,7 +140,7 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
-    auto duration = std::chrono::milliseconds(int(1.0/ this->get_parameter("desired_framerate").as_double() * 1000));
+    auto duration = std::chrono::milliseconds(int(1.0/ this->get_parameter("desired_framerate").as_int() * 1000));
     timer_ = this->create_wall_timer(duration, std::bind(&PCODriver::imageCallback, this));
     RCLCPP_INFO_STREAM(LOGGER, "Camera is now recording");
 
@@ -162,6 +169,7 @@ void PCODriver::imageCallback() {
 }
 
 PCODriver::~PCODriver() {
+    RCLCPP_WARN_STREAM(LOGGER,"PCO driver is shutting down");
     pco_grabber_->Close_Grabber();
     pco_camera_->Close_Cam();
 
