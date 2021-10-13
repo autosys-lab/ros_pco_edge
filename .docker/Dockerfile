@@ -30,7 +30,8 @@ RUN apt-get update && apt-get install -y \
     ros-$ROSDISTRO-rqt-common-plugins \
     ros-$ROSDISTRO-image-pipeline \
     ros-$ROSDISTRO-image-common \
-    libusb-1.0-0-dev
+    libusb-1.0-0-dev \
+    usbutils
 
 RUN pip3 install -U \
     argcomplete \

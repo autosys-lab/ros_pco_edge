@@ -14,6 +14,8 @@
 #include <pco_common/pco_classes/Cpco_com.h>
 #include <pco_driver/pco_classes/Cpco_grab_usb.h>
 #include <pco_common/pco_include/file12.h>
+#define PCO_ERRT_H_CREATE_OBJECT
+#include <pco_common/pco_include/PCO_errt_w.h>
 
 class PCODriver : public rclcpp::Node{
 public:
@@ -34,8 +36,6 @@ private:
 
     std::shared_ptr<sensor_msgs::msg::Image> image_msg_;
 
-    void imageCallback();
-
     // PCO camera components
     std::shared_ptr<CPco_com> pco_camera_;
     std::shared_ptr<CPco_grab_usb> pco_grabber_;
@@ -43,6 +43,9 @@ private:
     DWORD pco_error_;
 
     std::vector<WORD> pco_buffer_;
+
+    void imageCallback();
+    std::string getPCOError(WORD error_code);
 
 };
 

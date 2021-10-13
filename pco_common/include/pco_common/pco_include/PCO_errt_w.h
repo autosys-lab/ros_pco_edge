@@ -433,17 +433,17 @@ const int APPLICATIONWARNING_MSGNUM = sizeof(PCO_ERROR_APPLICATIONWARNING_TXT) /
 // end: warnings
 /////////////////////////////////////////////////////////////////////
 
-#if defined _MSC_VER
-#if     _MSC_VER < 1400
+//#if defined _MSC_VER
+//#if     _MSC_VER < 1400
 int sprintf_s(char* buf, int dwlen, const char* cp, ...)
 {
   va_list arglist;
 
   va_start(arglist, cp);
-  return _vsnprintf(buf, dwlen, cp, arglist);
+  return vsnprintf(buf, dwlen, cp, arglist);
 }
-#endif
-#endif
+//#endif
+//#endif
 
 void PCO_GetErrorText(DWORD dwerr, char* pbuf, DWORD dwlen)
 {

@@ -33,7 +33,7 @@ bool PCODriver::initialiseCamera() {
     pco_error_ = pco_camera_->Open_Cam((WORD)board);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to open camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to open camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
@@ -42,56 +42,56 @@ bool PCODriver::initialiseCamera() {
     pco_error_ = pco_grabber_->Open_Grabber(board);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to open grabber with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to open grabber with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_grabber_->Set_Grabber_Timeout(10000);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set grabber timeout with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set grabber timeout with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_camera_->PCO_SetCameraToCurrentTime();
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera to current time with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera to current time with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
     
     pco_error_ = pco_camera_->PCO_SetRecordingState(0);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera state to stop with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set camera state to stop with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_camera_->PCO_ResetSettingsToDefault();
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to reset the settings to default ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to reset the settings to default ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_camera_->PCO_SetTimestampMode(2);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timestamp mode of the camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timestamp mode of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_camera_->PCO_SetTimebase(1, 1);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timebase of the camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timebase of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 5000);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
@@ -99,7 +99,7 @@ bool PCODriver::initialiseCamera() {
     pco_error_ = pco_camera_->PCO_GetActualSize(&image_width_, &image_height_);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to determine image size with ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to determine image size with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
@@ -123,20 +123,20 @@ bool PCODriver::initialiseCamera() {
     pco_error_ = pco_camera_->PCO_ArmCamera();
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to arm the camera ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to arm the camera ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
     pco_error_ = pco_grabber_->PostArm();
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed in the post arming setup of the grabber ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed in the post arming setup of the grabber ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
     pco_error_ = pco_camera_->PCO_SetRecordingState(1);
     if(pco_error_!=PCO_NOERROR)
     {
-        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the camera to record ERROR: \n" << pco_error_ << "\n\nExiting\n");
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the camera to record ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
@@ -173,6 +173,12 @@ PCODriver::~PCODriver() {
     pco_grabber_->Close_Grabber();
     pco_camera_->Close_Cam();
 
+}
+
+std::string PCODriver::getPCOError(WORD error_code) {
+    char pco_error_text[500];
+    PCO_GetErrorText(error_code, pco_error_text, 500);
+    return std::string(pco_error_text);
 }
 
 
