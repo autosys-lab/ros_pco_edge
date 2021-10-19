@@ -19,5 +19,10 @@ def generate_launch_description():
             parameters=[
                 {"camera_calibration_file": LaunchConfiguration('camera_calibration_file')}
             ]
+        ),
+        Node(
+            package='rqt_gui',
+            executable='rqt_gui',
+            output='screen'
         )
     ])

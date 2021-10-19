@@ -6,6 +6,7 @@ echo -e "Starting up the user pco edge container for branch $branch and access t
 docker run -it \
     --user=$(id -u $USER):$(id -g $USER) \
     --group-add sudo \
+    --group-add dialout \
     --env="DISPLAY" \
     --env=QT_X11_NO_MITSHM=1 \
     --workdir="/dev_ws" \
@@ -17,4 +18,5 @@ docker run -it \
     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
     --net=host \
     --gpus 'all,"capabilities=compute,display,graphics,utility"' \
+    --privileged \
     gdwyer/ros_pco_edge:$branch-amd64

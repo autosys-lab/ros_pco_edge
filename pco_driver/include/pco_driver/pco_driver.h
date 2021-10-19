@@ -32,7 +32,7 @@ private:
     int camera_id;
 
     std::shared_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
-    image_transport::CameraPublisher camera_info_pub_;
+    image_transport::CameraPublisher camera_publisher_;
 
     std::shared_ptr<sensor_msgs::msg::Image> image_msg_;
 

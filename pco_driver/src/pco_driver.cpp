@@ -15,7 +15,7 @@ PCODriver::PCODriver(const rclcpp::NodeOptions &options) : Node("pco_camera_driv
 
     // Initialise ROS objects
     rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
-    camera_info_pub_ = image_transport::create_camera_publisher(this, "image", custom_qos_profile);
+    camera_publisher_ = image_transport::create_camera_publisher(this, this->get_fully_qualified_name() + std::string("/image"));
 
     camera_info_manager_ = std::make_shared<camera_info_manager::CameraInfoManager>(this);
     camera_info_manager_->loadCameraInfo(this->get_parameter("camera_calibration_file").as_string());
@@ -81,14 +81,14 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
-    pco_error_ = pco_camera_->PCO_SetTimebase(1, 1);
+    pco_error_ = pco_camera_->PCO_SetTimebase(1, 2);
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timebase of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
         return false;
     }
 
-    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 5000);
+    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 30);
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
@@ -114,9 +114,9 @@ bool PCODriver::initialiseCamera() {
     image_msg_->data.assign(image_height_ * image_width_, 0);
     image_msg_->width = image_width_;
     image_msg_->height = image_height_;
-    image_msg_->step = (16 / 8) * image_width_;   //row length in bytes
+    image_msg_->step = (8 / 8) * image_width_;   //row length in bytes
     image_msg_->is_bigendian = bit_alignment == 0;
-    image_msg_->encoding = sensor_msgs::image_encodings::MONO16;
+    image_msg_->encoding = sensor_msgs::image_encodings::MONO8;
     image_msg_->header.frame_id = this->get_parameter("frame_id").as_string();
 
     RCLCPP_INFO_STREAM(LOGGER, "Preparing camera to record");
@@ -149,6 +149,7 @@ bool PCODriver::initialiseCamera() {
 
 void PCODriver::imageCallback() {
     // Get latest image from camera/grabber
+    RCLCPP_INFO_STREAM(LOGGER, "Image callback ");
     pco_error_ = pco_grabber_->Acquire_Image(pco_buffer_.data());
     //convert to ros image
     std::copy(pco_buffer_.begin(), pco_buffer_.end(), image_msg_->data.begin());
@@ -164,12 +165,14 @@ void PCODriver::imageCallback() {
     camera_info_msg_->header.stamp = timestamp;
     camera_info_msg_->header.frame_id = this->get_parameter("frame_id").as_string();
 
-    camera_info_pub_.publish(image_msg_, camera_info_msg_);
+    camera_publisher_.publish(image_msg_, camera_info_msg_);
 
 }
 
 PCODriver::~PCODriver() {
     RCLCPP_WARN_STREAM(LOGGER,"PCO driver is shutting down");
+    timer_->cancel();
+    camera_publisher_.shutdown();
     pco_grabber_->Close_Grabber();
     pco_camera_->Close_Cam();
 
