@@ -88,7 +88,7 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
-    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 30);
+    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 40);
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
@@ -111,12 +111,12 @@ bool PCODriver::initialiseCamera() {
     // Setup the buffer for the images
     pco_buffer_.assign(image_height_ * image_width_, 0);
     image_msg_ = std::make_shared<sensor_msgs::msg::Image>();
-    image_msg_->data.assign(image_height_ * image_width_, 0);
+    image_msg_->data.assign(2 * image_height_ * image_width_, 0); // 16 bit stored in 8 bit so times by 2
     image_msg_->width = image_width_;
     image_msg_->height = image_height_;
-    image_msg_->step = (8 / 8) * image_width_;   //row length in bytes
+    image_msg_->step = 2 * image_width_;   //row length in bytes as each is a word (uint16)
     image_msg_->is_bigendian = bit_alignment == 0;
-    image_msg_->encoding = sensor_msgs::image_encodings::MONO8;
+    image_msg_->encoding = sensor_msgs::image_encodings::MONO16;
     image_msg_->header.frame_id = this->get_parameter("frame_id").as_string();
 
     RCLCPP_INFO_STREAM(LOGGER, "Preparing camera to record");
@@ -147,12 +147,32 @@ bool PCODriver::initialiseCamera() {
     return true;
 }
 
+uint8_t convert_to_uint(const WORD a){
+//    uint8_t Test2 = (unsigned)(Test >> 4);
+    return (unsigned)(a >> 4);
+}
+
 void PCODriver::imageCallback() {
     // Get latest image from camera/grabber
-    RCLCPP_INFO_STREAM(LOGGER, "Image callback ");
+    auto& clk = *this->get_clock();
+    RCLCPP_INFO_THROTTLE(LOGGER,
+                         clk,
+                         5000,"Image callback ");
     pco_error_ = pco_grabber_->Acquire_Image(pco_buffer_.data());
     //convert to ros image
-    std::copy(pco_buffer_.begin(), pco_buffer_.end(), image_msg_->data.begin());
+    // Clear has a lot of overhead should just overwrite by index probably.
+    image_msg_->data.clear();
+    for(const auto value : pco_buffer_){
+        image_msg_->data.push_back((uint8_t) value);
+        image_msg_->data.push_back((uint8_t )(value >> 8));
+    }
+
+// // Should work but not currently working.
+//    for(size_t i = 0; i < pco_buffer_.size(); i++){
+//        // The order will need to change if it is meant to be big endian
+//        image_msg_->data[2*i] = (uint8_t) pco_buffer_[i]; // lo
+//        image_msg_->data[(2*i)+1] = (uint8_t) pco_buffer_[i] >> 8; //hi
+//    }
     //publish with the camera info
     sensor_msgs::msg::CameraInfo::SharedPtr camera_info_msg_(
             new sensor_msgs::msg::CameraInfo(camera_info_manager_->getCameraInfo()));
