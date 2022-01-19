@@ -155,7 +155,7 @@ uint8_t convert_to_uint(const WORD a){
 void PCODriver::imageCallback() {
     // Get latest image from camera/grabber
     auto& clk = *this->get_clock();
-    RCLCPP_INFO_THROTTLE(LOGGER,
+    RCLCPP_DEBUG_THROTTLE(LOGGER,
                          clk,
                          5000,"Image callback ");
     pco_error_ = pco_grabber_->Acquire_Image(pco_buffer_.data());
