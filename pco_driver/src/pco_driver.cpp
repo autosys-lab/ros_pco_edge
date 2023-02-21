@@ -12,7 +12,7 @@ PCODriver::PCODriver(const rclcpp::NodeOptions &options) : Node("pco_camera_driv
     this->declare_parameter<std::string>("camera_calibration_file", "file://config/camera.yaml");
     this->declare_parameter<int>("desired_framerate", 10);
     this->declare_parameter<int>("camera_id", 0);
-
+    this->declare_parameter<int>("exposure_time");
     // Initialise ROS objects
     rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
     camera_publisher_ = image_transport::create_camera_publisher(this, this->get_fully_qualified_name() + std::string("/image"));
@@ -88,7 +88,7 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
-    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, 40);
+    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, this->get_parameter("exposure_time").as_int());
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
@@ -115,7 +115,7 @@ bool PCODriver::initialiseCamera() {
     image_msg_->width = image_width_;
     image_msg_->height = image_height_;
     image_msg_->step = 2 * image_width_;   //row length in bytes as each is a word (uint16)
-    image_msg_->is_bigendian = bit_alignment == 0;
+    image_msg_->is_bigendian = 0;  //bit_alignment == 0;
     image_msg_->encoding = sensor_msgs::image_encodings::MONO16;
     image_msg_->header.frame_id = this->get_parameter("frame_id").as_string();
 
