@@ -180,7 +180,7 @@ extern "C" int get_b16_fileparams(char *filename,int *width,int *height,int *col
        *colormode  = *b1;
        break;
 
-      case -1:
+      case 4294967295:
        b1++;
        *colormode  = *b1;
        break;
