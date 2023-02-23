@@ -23,6 +23,9 @@ public:
 
     ~PCODriver();
     bool initialiseCamera();
+    
+    rcl_interfaces::msg::SetParametersResult parametersCallback(
+    	const std::vector<rclcpp::Parameter> &parameters);
 
 private:
     rclcpp::TimerBase::SharedPtr timer_;
@@ -46,6 +49,8 @@ private:
 
     void imageCallback();
     std::string getPCOError(WORD error_code);
+    
+    OnSetParametersCallbackHandle::SharedPtr callback_handle_;
 
 };
 
