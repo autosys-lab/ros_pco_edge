@@ -12,7 +12,7 @@ PCODriver::PCODriver(const rclcpp::NodeOptions &options) : Node("pco_camera_driv
     this->declare_parameter<std::string>("camera_calibration_file", "file://config/camera.yaml");
     this->declare_parameter<int>("desired_framerate", 10);
     this->declare_parameter<int>("camera_id", 0);
-    this->declare_parameter<int>("exposure_time");
+    this->declare_parameter<int>("exposure_time", 300);
     // Initialise ROS objects
     rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
     camera_publisher_ = image_transport::create_camera_publisher(this, this->get_fully_qualified_name() + std::string("/image"));
