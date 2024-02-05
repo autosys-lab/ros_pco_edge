@@ -24,6 +24,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(camera_info_manager REQUIRED)
+find_package(std_srvs REQUIRED)
 
 include_directories(include)
 
@@ -79,6 +80,7 @@ ament_target_dependencies(pco_camera_driver
         sensor_msgs
         camera_info_manager
         image_transport
+        std_srvs
         )
 
 rclcpp_components_register_nodes(pco_camera_driver "PCODriver")

@@ -9,6 +9,7 @@
 #include <image_transport/image_transport.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <sensor_msgs/image_encodings.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 // PCO camera
 #include <pco_common/pco_classes/Cpco_com.h>
@@ -16,6 +17,7 @@
 #include <pco_common/pco_include/file12.h>
 #define PCO_ERRT_H_CREATE_OBJECT
 #include <pco_common/pco_include/PCO_errt_w.h>
+
 
 class PCODriver : public rclcpp::Node{
 public:
@@ -39,16 +41,22 @@ private:
 
     std::shared_ptr<sensor_msgs::msg::Image> image_msg_;
 
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr software_trigger_srv_;
+
     // PCO camera components
     std::shared_ptr<CPco_com> pco_camera_;
     std::shared_ptr<CPco_grab_usb> pco_grabber_;
     CPco_Log* mylog=NULL;
     DWORD pco_error_;
+    WORD* pco_trigger=new WORD;
+    DWORD* pco_acquire_no=new DWORD;
 
     std::vector<WORD> pco_buffer_;
 
     void imageCallback();
     std::string getPCOError(WORD error_code);
+
+    void softwareTriggerCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res);
     
     OnSetParametersCallbackHandle::SharedPtr callback_handle_;
 

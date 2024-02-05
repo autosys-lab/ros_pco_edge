@@ -5,6 +5,8 @@
 #include <pco_driver/pco_driver.h>
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 
+using namespace std::placeholders;
+
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("pco_camera_driver");
 
 PCODriver::PCODriver(const rclcpp::NodeOptions &options) : Node("pco_camera_driver", options){
@@ -14,9 +16,12 @@ PCODriver::PCODriver(const rclcpp::NodeOptions &options) : Node("pco_camera_driv
     this->declare_parameter<int>("desired_framerate", 10);
     this->declare_parameter<int>("camera_id", 0);
     this->declare_parameter<int>("exposure_time", 300);
+    this->declare_parameter<int>("trigger_mode", 1);
 
     callback_handle_ = this->add_on_set_parameters_callback(
-    	std::bind(&PCODriver::parametersCallback, this, std::placeholders::_1));
+    	std::bind(&PCODriver::parametersCallback, this, _1));
+
+    software_trigger_srv_ = create_service<std_srvs::srv::Trigger>("~/software_trigger", std::bind(&PCODriver::softwareTriggerCallback, this, _1, _2, _3));
 
     // Initialise ROS objects
     rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
@@ -41,20 +46,45 @@ rcl_interfaces::msg::SetParametersResult PCODriver::parametersCallback(
     for (const auto &param: parameters) {
     	
     	if (param.get_name() == "exposure_time") {
+            pco_error_ = pco_camera_->PCO_SetRecordingState(0);
+            if(pco_error_!=PCO_NOERROR)
+            {
+                RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the camera to stop recording ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
+                result.successful = false;
+    	        result.reason = getPCOError(pco_error_);
+            }
             result.successful = true;
-            result.reason = "sucess";
+            result.reason = "success";
     	    pco_error_ = pco_camera_->PCO_SetDelayExposure(0, param.as_int());
 
     	    if(pco_error_!=PCO_NOERROR){
-	        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
-	        result.successful = false;
+	            RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the delay and exposure time of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
+	            result.successful = false;
     	        result.reason = getPCOError(pco_error_);
     	    }
+                pco_error_ = pco_camera_->PCO_ArmCamera();
+            if(pco_error_!=PCO_NOERROR)
+            {
+                RCLCPP_ERROR_STREAM(LOGGER, "Failed to arm the camera ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
+                result.successful = false;
+    	        result.reason = getPCOError(pco_error_);
+            }
+            pco_error_ = pco_grabber_->PostArm();
+            if(pco_error_!=PCO_NOERROR)
+            {
+                RCLCPP_ERROR_STREAM(LOGGER, "Failed in the post arming setup of the grabber ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
+                result.successful = false;
+    	        result.reason = getPCOError(pco_error_);
+            }
+            pco_error_ = pco_camera_->PCO_SetRecordingState(1);
+            if(pco_error_!=PCO_NOERROR)
+            {
+                RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the camera to start recording ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
+                result.successful = false;
+    	        result.reason = getPCOError(pco_error_);
+            }
     	}
-    }
-    /*
-    */
-    
+    }    
     return result;    	
 }
 
@@ -106,7 +136,7 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
-    pco_error_ = pco_camera_->PCO_SetTimestampMode(2);
+    pco_error_ = pco_camera_->PCO_SetTimestampMode(0);
     if(pco_error_!=PCO_NOERROR)
     {
         RCLCPP_ERROR_STREAM(LOGGER, "Failed to set timestamp mode of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
@@ -172,9 +202,27 @@ bool PCODriver::initialiseCamera() {
         return false;
     }
 
-    auto duration = std::chrono::milliseconds(int(1.0/ this->get_parameter("desired_framerate").as_int() * 1000));
-    timer_ = this->create_wall_timer(duration, std::bind(&PCODriver::imageCallback, this));
-    RCLCPP_INFO_STREAM(LOGGER, "Camera is now recording");
+    pco_error_ = pco_camera_->PCO_SetTriggerMode(this->get_parameter("trigger_mode").as_int());
+    pco_camera_->PCO_GetTriggerMode(pco_trigger);
+    if(pco_error_!=PCO_NOERROR)
+    {
+        RCLCPP_ERROR_STREAM(LOGGER, "Failed to set the trigger mode of the camera with ERROR: \n" << getPCOError(pco_error_) << "\n\nExiting\n");
+        return false;
+    } else {
+        RCLCPP_INFO_STREAM(LOGGER, "Trigger mode set to " << *pco_trigger);
+    }
+
+    if(*pco_trigger == 0) {
+        auto duration = std::chrono::milliseconds(int(1.0/ this->get_parameter("desired_framerate").as_int() * 1000));
+        timer_ = this->create_wall_timer(duration, std::bind(&PCODriver::imageCallback, this));
+        RCLCPP_INFO_STREAM(LOGGER, "Camera is now recording");
+    } else if ((*pco_trigger == 1) || (*pco_trigger == 2)){
+        RCLCPP_INFO_STREAM(LOGGER, "Camera is now waiting for a trigger");
+    } else {
+        RCLCPP_ERROR_STREAM(LOGGER, "Unknown trigger mode");
+        return false;
+    }
+
 
     return true;
 }
@@ -234,6 +282,19 @@ std::string PCODriver::getPCOError(WORD error_code) {
     char pco_error_text[500];
     PCO_GetErrorText(error_code, pco_error_text, 500);
     return std::string(pco_error_text);
+}
+
+void PCODriver::softwareTriggerCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) {
+    (void)request_header;
+    (void)req;
+    pco_error_ = pco_camera_->PCO_ForceTrigger(pco_trigger);
+    bool triggered = *pco_trigger == 1;
+    bool no_error = pco_error_ == PCO_NOERROR;
+    res->success = triggered && no_error;
+    if (res->success) {
+        this->imageCallback();
+        RCLCPP_INFO_STREAM(LOGGER, "Software trigger successful");
+    }
 }
 
 
