@@ -16,7 +16,7 @@ PCODriver::PCODriver(const rclcpp::NodeOptions &options) : Node("pco_camera_driv
     this->declare_parameter<int>("desired_framerate", 10);
     this->declare_parameter<int>("camera_id", 0);
     this->declare_parameter<int>("exposure_time", 300);
-    this->declare_parameter<int>("trigger_mode", 1);
+    this->declare_parameter<int>("trigger_mode", 0);
 
     callback_handle_ = this->add_on_set_parameters_callback(
     	std::bind(&PCODriver::parametersCallback, this, _1));
