@@ -40,8 +40,7 @@ rcl_interfaces::msg::SetParametersResult PCODriver::parametersCallback(
     	const std::vector<rclcpp::Parameter> &parameters) {
     rcl_interfaces::msg::SetParametersResult result;
     
-    result.successful = false;
-    result.reason = "Parameter callback for the changed parameter not implemented";
+    result.successful = true;
     
     for (const auto &param: parameters) {
     	
@@ -84,6 +83,7 @@ rcl_interfaces::msg::SetParametersResult PCODriver::parametersCallback(
     	        result.reason = getPCOError(pco_error_);
             }
     	}
+        RCLCPP_INFO(LOGGER, "Received unknown parameter '%s' with value: %s", param.get_name().c_str(), param.value_to_string().c_str());
     }    
     return result;    	
 }
